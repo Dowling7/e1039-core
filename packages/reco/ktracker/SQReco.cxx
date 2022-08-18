@@ -517,6 +517,34 @@ int SQReco::process_event(PHCompositeNode* topNode)
     }
   }
 
+//flag
+  std::list<Tracklet>& rec_trackletsSt23 = _fastfinder->getTrackletList(3);
+  for(auto iter = rec_trackletsSt23.begin(); iter != rec_trackletsSt23.end(); ++iter)
+  {
+    iter->calcChisq();
+    if(Verbosity() > Fun4AllBase::VERBOSITY_A_LOT) iter->print();
+
+    bool fitOK = false;
+    if(_enable_KF)
+    {
+      if(_fitter_type == SQReco::LEGACY){
+        fitOK = fitSt23TrackletCand(*iter, _kfitter);
+	//std::cout<<"it was legacy"<<std::endl;
+      } else{
+        fitOK = fitSt23TrackletCand(*iter, _gfitter);
+	//std::cout<<"it wasn't legacy"<<std::endl;
+      }
+    }
+
+    if(!fitOK)
+    {
+      SRecTrack recTrack = iter->getSRecTrack(_enable_KF && (_fitter_type == SQReco::LEGACY));
+      recTrack.setKalmanStatus(-1);
+      
+      fillRecSt23Tracklet(recTrack);
+    }
+  }
+
 
   //add additional eval information if applicable
   if(is_eval_enabled() || is_eval_dst_enabled())
@@ -713,6 +741,40 @@ bool SQReco::fitSt3TrackletCand(Tracklet& tracklet, KalmanFitter* fitter)
   return true;
 }
 
+//flag
+bool SQReco::fitSt23TrackletCand(Tracklet& tracklet, KalmanFitter* fitter)
+{
+  KalmanTrack kmtrk;
+  kmtrk.setTracklet(tracklet);
+
+  if(kmtrk.getNodeList().empty()) 
+  {
+    LogDebug("kmtrk nodelist empty");
+    return false;
+  }
+
+  if(_kfitter->processOneTrack(kmtrk) == 0)
+  {
+    LogDebug("kFitter failed to converge");
+    return false;
+  }
+
+  _kfitter->updateTrack(kmtrk);//update after fitting
+
+  SRecTrack strack = kmtrk.getSRecTrack();
+
+  //Set trigger road ID
+  TriggerRoad road(tracklet);
+  strack.setTriggerRoad(road.getRoadID());
+
+  //Set prop tube slopes
+  strack.setNHitsInPT(tracklet.seg_x.getNHits(), tracklet.seg_y.getNHits());
+  strack.setPTSlope(tracklet.seg_x.a, tracklet.seg_y.a);
+  strack.setKalmanStatus(1);
+  fillRecSt23Tracklet(strack);
+  return true;
+}
+
 bool SQReco::fitTrackCand(Tracklet& tracklet, SQGenFit::GFFitter* fitter)
 {
   LogDebug("chisq of tracklet = "<<tracklet.chisq);
@@ -828,6 +890,41 @@ bool SQReco::fitSt3TrackletCand(Tracklet& tracklet, SQGenFit::GFFitter* fitter)
   return true;
 }
 
+//flag
+bool SQReco::fitSt23TrackletCand(Tracklet& tracklet, SQGenFit::GFFitter* fitter)
+{
+  SQGenFit::GFTrack gftrk;
+  gftrk.setTracklet(tracklet);
+
+  int fitOK = _gfitter->processTrack(gftrk);
+  if(fitOK != 0)
+  {
+    LogDebug("gFitter failed to converge.");
+    return false;
+  }
+
+  if(Verbosity() > Fun4AllBase::VERBOSITY_A_LOT)
+  {
+    gftrk.postFitUpdate();
+    gftrk.print(2);
+  }
+
+  //TODO: A gtrack quality cut?
+
+  SRecTrack strack = gftrk.getSRecTrack();
+
+  //Set trigger road ID
+  TriggerRoad road(tracklet);
+  strack.setTriggerRoad(road.getRoadID());
+
+  //Set prop tube slopes
+  strack.setNHitsInPT(tracklet.seg_x.getNHits(), tracklet.seg_y.getNHits());
+  strack.setPTSlope(tracklet.seg_x.a, tracklet.seg_y.a);
+
+  fillRecSt23Tracklet(strack);
+  return true;
+}
+
 
 int SQReco::InitEvalTree() 
 {
@@ -865,6 +962,15 @@ void SQReco::fillRecSt3Tracklet(SRecTrack& recTrack)
     _recSt3TrackletVec->push_back(&recTrack);
 }
 
+//flag
+void SQReco::fillRecSt23Tracklet(SRecTrack& recTrack)
+{
+  if(_legacy_rec_container)
+    _recEvent->insertSt23Tracklet(recTrack);
+  else
+    _recSt23TrackletVec->push_back(&recTrack);
+}
+
 int SQReco::MakeNodes(PHCompositeNode* topNode) 
 {
   PHNodeIterator iter(topNode);
@@ -892,7 +998,11 @@ int SQReco::MakeNodes(PHCompositeNode* topNode)
     eventNode->addNode(recEventNode);
     _recSt3TrackletVec = new SQTrackVector_v1();
     PHIODataNode<PHObject>* recEventNodeSt3 = new PHIODataNode<PHObject>(_recSt3TrackletVec, "SQRecSt3TrackletVector", "PHObject");
+//flag
+    _recSt23TrackletVec = new SQTrackVector_v1();
+    PHIODataNode<PHObject>* recEventNodeSt3 = new PHIODataNode<PHObject>(_recSt3TrackletVec, "SQRecSt23TrackletVector", "PHObject");
     eventNode->addNode(recEventNodeSt3);
+	  
     if(Verbosity() >= Fun4AllBase::VERBOSITY_SOME) LogInfo("DST/SQRecTrackVector Added");
     //PHIODataNode<double>* recEventNodeTotalTime = new PHIODataNode<double>(_totalTime, "TotalTime");
   }
