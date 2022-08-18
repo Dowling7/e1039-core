@@ -99,11 +99,19 @@ private:
   void ParticleID();
   bool fitTrackCand(Tracklet& tracklet, KalmanFitter* fitter);
   bool fitSt3TrackletCand(Tracklet& tracklet, KalmanFitter* fitter);
+  //flag
+  bool fitSt23TrackletCand(Tracklet& tracklet, KalmanFitter* fitter);
   bool fitTrackCand(Tracklet& tracklet, SQGenFit::GFFitter* fitter);
   bool fitSt3TrackletCand(Tracklet& tracklet, SQGenFit::GFFitter* fitter);
+  //flag
+  bool fitSt23TrackletCand(Tracklet& tracklet, SQGenFit::GFFitter* fitter);
+
 
   void fillRecTrack(SRecTrack& recTrack);
   void fillRecSt3Tracklet(SRecTrack& recTrack);
+  //flag
+  void fillRecSt23Tracklet(SRecTrack& recTrack);
+
 
   double WalkBackTracklets(Tracklet& tracklet1, Tracklet& tracklet2);
   
@@ -154,6 +162,8 @@ private:
   SRecEvent* _recEvent;
   SQTrackVector* _recTrackVec;
   SQTrackVector* _recSt3TrackletVec;
+  SQTrackVector* _recSt23TrackletVec;
+
 
   double _totalTime;
   
