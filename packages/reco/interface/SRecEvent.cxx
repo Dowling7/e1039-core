@@ -745,6 +745,8 @@ void SRecEvent::clear()
 {
     fAllTracks.clear();
     fAllSt3Tracklets.clear();
+	//flag
+    fAllSt23Tracklets.clear();
     fLocalID.clear();
     fDimuons.clear();
 
