@@ -998,10 +998,11 @@ int SQReco::MakeNodes(PHCompositeNode* topNode)
     eventNode->addNode(recEventNode);
     _recSt3TrackletVec = new SQTrackVector_v1();
     PHIODataNode<PHObject>* recEventNodeSt3 = new PHIODataNode<PHObject>(_recSt3TrackletVec, "SQRecSt3TrackletVector", "PHObject");
-//flag
-    _recSt23TrackletVec = new SQTrackVector_v1();
-    PHIODataNode<PHObject>* recEventNodeSt3 = new PHIODataNode<PHObject>(_recSt3TrackletVec, "SQRecSt23TrackletVector", "PHObject");
     eventNode->addNode(recEventNodeSt3);
+	  //flag
+    _recSt23TrackletVec = new SQTrackVector_v1();
+    PHIODataNode<PHObject>* recEventNodeSt23 = new PHIODataNode<PHObject>(_recSt23TrackletVec, "SQRecSt23TrackletVector", "PHObject");
+    eventNode->addNode(recEventNodeSt23);
 	  
     if(Verbosity() >= Fun4AllBase::VERBOSITY_SOME) LogInfo("DST/SQRecTrackVector Added");
     //PHIODataNode<double>* recEventNodeTotalTime = new PHIODataNode<double>(_totalTime, "TotalTime");
