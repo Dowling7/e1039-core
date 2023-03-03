@@ -21,8 +21,6 @@ Created: 05-24-2013
 #include <Math/Minimizer.h>
 #include <Math/Functor.h>
 
-#include "TMathBase.h"
-
 #include "SRawEvent.h"
 #include "KalmanTrack.h"
 #include "KalmanFitter.h"
@@ -37,7 +35,7 @@ class KalmanFastTracking
 {
 public:
     explicit KalmanFastTracking(const PHField* field, const TGeoManager *geom, bool flag = true);
-    ~KalmanFastTracking();
+    virtual ~KalmanFastTracking();
 
     //set/get verbosity
     void Verbosity(const int a) {verbosity = a;}
@@ -45,7 +43,7 @@ public:
     void printTimers();
 
     //Set the input event
-    int setRawEvent(SRawEvent* event_input);
+    virtual int setRawEvent(SRawEvent* event_input);
     void setRawEventDebug(SRawEvent* event_input);
 
     //Event quality cut
@@ -53,27 +51,13 @@ public:
 
     ///Tracklet finding stuff
     //Build tracklets in a station
-    void buildTrackletsInStation(int stationID, int listID, double* pos_exp = nullptr, double* window = nullptr);
-    void buildTrackletsInStationSlim(int stationID, int listID, double* pos_exp = nullptr, double* window = nullptr);
-  void buildTrackletsInStationSlimU(int stationID, int listID, double* pos_exp = nullptr, double* window = nullptr);
-    void buildTrackletsInStationSlimV(int stationID, int listID, double* pos_exp = nullptr, double* window = nullptr);
-  bool buildTrackletsInStation1(int stationID, int listID, double expXZSlope, double* pos_exp = nullptr, double* window = nullptr);
-  void buildTrackletsInStation1X(int stationID, int listID, double* pos_exp = nullptr, double* window = nullptr);
-  void buildTrackletsInStationWithUV(int stationID, int listID, Tracklet& tracklet23, double* pos_exp = nullptr, double* window = nullptr);
+    virtual void buildTrackletsInStation(int stationID, int listID, double* pos_exp = nullptr, double* window = nullptr);
 
     //Build back partial tracks using tracklets in station 2 & 3
-    void buildBackPartialTracks();
-  void buildBackPartialTracksSlim();
-  void buildBackPartialTracksSlim_v2();
-    void buildBackPartialTracksSlimX(int pass);
-    void buildBackPartialTracksSlimU(int pass);
-  void buildBackPartialTracksSlimV(int pass);
+    virtual void buildBackPartialTracks();
 
     //Build global tracks by connecting station 23 tracklets and station 1 tracklets
-    void buildGlobalTracks();
-
-  //Build global tracks by connecting station 23 tracklets and station 1 tracklets
-  void buildGlobalTracksDisplaced();
+    virtual void buildGlobalTracks();
 
     //Fit tracklets
     int fitTracklet(Tracklet& tracklet);
@@ -85,21 +69,6 @@ public:
     bool muonID_search(Tracklet& tracklet);
     bool muonID_hodoAid(Tracklet& tracklet);
 
-    bool compareTracklets(Tracklet& tracklet1, Tracklet& tracklet2);
-  bool compareTrackletsSlim(Tracklet& tracklet1, Tracklet& tracklet2, int pass);
-  bool compareTrackletsSlimU(Tracklet& tracklet1, Tracklet& tracklet2, int pass);
-  bool compareTrackletsSlimV(Tracklet& tracklet1, Tracklet& tracklet2, int pass);
-
-    bool compareTrackletsSerious(Tracklet& tracklet1, Tracklet& tracklet2);
-  
-      bool compareTracklets_v2(Tracklet& tracklet1, Tracklet& tracklet2);
-  bool compareTrackletsSlim_v2(Tracklet& tracklet1, Tracklet& tracklet2, int pass);
-  bool compareTrackletsSlimU_v2(Tracklet& tracklet1, Tracklet& tracklet2, int pass);
-  bool compareTrackletsSlimV_v2(Tracklet& tracklet1, Tracklet& tracklet2, int pass);
-
-  bool checkTwoTracklets(Tracklet& tracklet1, Tracklet& tracklet2);
-  bool checkSingleTracklet(Tracklet& tracklet1);
-  
     void buildPropSegments();
 
     //Resolve left-right when possible
@@ -137,13 +106,17 @@ public:
     std::list<SRecTrack>& getSRecTracks() { return stracks; }
     std::list<PropSegment>& getPropSegments(int i) { return propSegs[i]; }
 
-    ///Set the index of the final output tracklet list
-    void setOutputListID(unsigned int i) { outputListIdx = i; }
+    ///Set the index of the final output tracklet list.
+    /**
+     * If it is 1, 2, 3 or 4; D2, D3, D2+3 or Global tracklets are outputted (as SRecTrack),
+     * where the track reconstruction is terminated as soon as the requested tracklet type is found empty.
+     */
+    void setOutputListIndex(unsigned int i) { outputListIdx = i; }
 
     ///Tool, a simple-minded chi square fit
     void chi2fit(int n, double x[], double y[], double& a, double& b);
 
-private:
+protected:
     //verbosity following Fun4All convention
     int verbosity;
 
@@ -154,9 +127,6 @@ private:
     //Tracklets in one event, id = 0, 1, 2 for station 0/1, 2, 3+/-, id = 3 for station 2&3 combined, id = 4 for global tracks
     //Likewise for the next part
     std::list<Tracklet> trackletsInSt[5];
-    std::list<Tracklet> trackletsInStSlimX[5];
-  std::list<Tracklet> trackletsInStSlimU[5];
-  std::list<Tracklet> trackletsInStSlimV[5];
 
     //Final SRecTrack list
     std::list<SRecTrack> stracks;
@@ -242,6 +212,8 @@ private:
 
     //Timer
     std::map<std::string, PHTimer*> _timers;
+
+    int setRawEventPrep(SRawEvent* event_input);
 };
 
 #endif
